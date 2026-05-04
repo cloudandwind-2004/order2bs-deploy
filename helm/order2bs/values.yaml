@@ -1,0 +1,42 @@
+global:
+  registry: harbor.2bsystem.com.vn
+  project: order2bs
+
+backend:
+  repository: harbor.2bsystem.com.vn/order2bs/backend
+  backendTag: "20260425-main-0d76410"
+  replicaCount: 1
+  service:
+    port: 8080
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+frontend:
+  repository: harbor.2bsystem.com.vn/order2bs/frontend
+  frontendTag: "20260425-main-0d76410"
+  replicaCount: 1
+  service:
+    port: 80
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+database:
+  enabled: true
+  image: postgres:16-alpine
+  storage: 1Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: order2bs.2bsystem.com.vn
+  tls: false

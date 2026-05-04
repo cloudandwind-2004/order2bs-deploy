@@ -1,0 +1,6 @@
+apiVersion: v2
+name: order2bs
+description: A Helm chart for Order2bs Food Ordering System
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

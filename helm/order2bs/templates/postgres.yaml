@@ -1,0 +1,91 @@
+{{- if .Values.database.enabled }}
+# ── PostgreSQL Deployment ─────────────────────────────────────────────────────
+# Dùng hostPath thay vì PVC vì cluster bare-metal không có default StorageClass
+# Dữ liệu lưu tại: /data/order2bs-postgres trên node 192.168.100.170
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-postgres
+spec:
+  replicas: 1
+  # Recreate đảm bảo chỉ có 1 pod ghi vào hostPath tại một thời điểm
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-postgres
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-postgres
+    spec:
+      # Cho phép postgres tạo thư mục /data/order2bs-postgres trên node
+      initContainers:
+        - name: init-pgdata
+          image: busybox:1.36
+          command: ["sh", "-c", "mkdir -p /mnt/pgdata && chmod 777 /mnt/pgdata"]
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /mnt/pgdata
+      containers:
+        - name: postgres
+          image: {{ .Values.database.image | default "postgres:16-alpine" }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              value: "lunchorder"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: DB_PASSWORD
+            # PGDATA phải là subdirectory của mountPath để postgres hoạt động đúng
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "lunchorder"]
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: postgres-data
+          hostPath:
+            path: /data/order2bs-postgres
+            type: DirectoryOrCreate
+---
+# ── PostgreSQL Service ────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+{{- end }}
