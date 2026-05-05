@@ -4,7 +4,7 @@ global:
 
 backend:
   repository: harbor.2bsystem.com.vn/order2bs/backend
-  backendTag: "20260505-main-57c71ed"
+  backendTag: "20260505-main-5320254"
   replicaCount: 1
   service:
     port: 8080
@@ -18,7 +18,7 @@ backend:
 
 frontend:
   repository: harbor.2bsystem.com.vn/order2bs/frontend
-  frontendTag: "20260505-main-57c71ed"
+  frontendTag: "20260505-main-5320254"
   replicaCount: 1
   service:
     port: 80
